@@ -27,14 +27,15 @@ export const GET = async (request:NextRequest) => {
 
   //check if user provide one of 'studentId' or 'courseNo'
   //User must not provide both values, and must not provide nothing
-
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     message: "Please provide either studentId or courseNo and not both!",
-  //   },
-  //   { status: 400 }
-  // );
+  if(courseNo && studentId || !courseNo && !studentId) {
+      return NextResponse.json(
+    {
+      ok: false,
+      message: "Please provide either studentId or courseNo and not both!",
+    },
+    { status: 400 }
+  );
+  }
 
   //get all courses enrolled by a student
   if (studentId) {
@@ -58,12 +59,19 @@ export const GET = async (request:NextRequest) => {
     //get all students enrolled by a course
   } else if (courseNo) {
     const studentIdList = [];
-    for (const enroll of DB.enrollments) {
+    for (const enroll of DB.enrollments){ 
       //your code here
+      if(enroll.courseNo === courseNo) {
+        studentIdList.push(enroll.studentId);
+      }
     }
 
     const students:Student[] = [];
     //your code here
+    for(const stdCourse of studentIdList){
+      const std = DB.students.find((s) => s.studentId === stdCourse);
+      if(std !== undefined) students.push(std);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -139,19 +147,22 @@ export const DELETE = async (request:NextRequest) => {
   }
 
   const { studentId, courseNo } = body;
-
   //check if studentId and courseNo exist on enrollment
-
-  // return NextResponse.json(
-  //   {
-  //     ok: false,
-  //     message: "Enrollment does not exist",
-  //   },
-  //   { status: 404 }
-  // );
-
+  // const found_studentIdandCourseNo = DB.enrollments.find((s) => s.studentId === studentId && s.courseNo === courseNo);
+  const enrollmentIndex = DB.enrollments.findIndex(
+    (enroll) => enroll.studentId === studentId && enroll.courseNo === courseNo
+  );
+  if(enrollmentIndex === -1) {
+      return NextResponse.json(
+    {
+      ok: false,
+      message: "Enrollment does not exist",
+    },
+    { status: 404 }
+  );
+  }
+  DB.enrollments.splice(enrollmentIndex,1);
   //perform deletion by using splice or array filter
-
   //if code reach here it means deletion is complete
   return NextResponse.json({
     ok: true,
